@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { defaultPreset, type KittenPreset, clamp, clamp01, safeParsePreset } from '../lib/kittenSchema';
+import { defaultPreset, type KittenPreset, clamp, clamp01 } from '../lib/kittenSchema';
 import { decodePresetFromUrlParam, encodePresetToUrlParam } from '../lib/presetCodec';
-import { validatePresetWithWorker } from '../lib/workerClient';
 import { KittenRenderer } from './KittenRenderer';
 
 function randomColor(seed: number): string {
@@ -46,7 +45,6 @@ function presetToSvgString(svg: SVGSVGElement): string {
 export function KittenCustomizer() {
   const [preset, setPreset] = useState<KittenPreset>(() => defaultPreset());
   const [toast, setToast] = useState<string>('');
-  const [busy, setBusy] = useState<boolean>(false);
   const svgHostRef = useRef<HTMLDivElement | null>(null);
 
   // Load preset from URL param (untrusted) on mount.
@@ -76,27 +74,6 @@ export function KittenCustomizer() {
       setToast('Copied to clipboard.');
     } catch {
       setToast('Copy failed (browser permissions).');
-    }
-  }
-
-  async function hardenWithWorker() {
-    setBusy(true);
-    try {
-      const validated = await validatePresetWithWorker(preset);
-      if (!validated) {
-        setToast('Worker validation failed (kept local preset).');
-        return;
-      }
-      // Still validate on client before applying.
-      const safe = safeParsePreset(validated);
-      if (!safe) {
-        setToast('Worker returned an unexpected preset (ignored).');
-        return;
-      }
-      setPreset(safe);
-      setToast('Preset validated by Worker.');
-    } finally {
-      setBusy(false);
     }
   }
 
@@ -181,7 +158,6 @@ export function KittenCustomizer() {
           <h2>Customize</h2>
           <div className="actions">
             <button onClick={() => copyToClipboard(shareUrl)} type="button">Copy Share URL</button>
-            <button onClick={hardenWithWorker} disabled={busy} type="button">Validate via Worker</button>
           </div>
         </div>
         <div className="panelBody">
@@ -523,8 +499,8 @@ export function KittenCustomizer() {
                 </button>
               </div>
               <div className="smallNote">
-                The URL preset is treated as untrusted input. It is validated with Zod before use, and the Worker can
-                re-validate it too.
+                This is a standalone/static build: the URL preset is treated as untrusted input and is validated with
+                Zod before use.
               </div>
             </div>
           </div>
