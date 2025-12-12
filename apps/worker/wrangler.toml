@@ -1,0 +1,8 @@
+name = "kitten-worker"
+main = "src/index.ts"
+compatibility_date = "2025-12-12"
+
+[vars]
+# Comma-separated list of allowed origins for CORS in local/dev.
+# In production, prefer same-origin and keep this empty.
+ALLOWED_ORIGINS = "http://localhost:5173,http://127.0.0.1:5173"
